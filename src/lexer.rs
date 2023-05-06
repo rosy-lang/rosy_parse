@@ -176,7 +176,7 @@ impl Lexer {
 
 			let span = Span::new(start, end);
 
-			return Err(insufficient_indent(col!() - 1, indent, span))
+			return Err(insufficient_indent(col!() - 1, indent, span));
 		}
 
 		if start_ln != end_ln {
@@ -212,7 +212,7 @@ impl Lexer {
 
 		if self.indents.is_empty() {
 			self.indents.push(1);
-			return Ok(())
+			return Ok(());
 		}
 
 		if col!() < indent!() {

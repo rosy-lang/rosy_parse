@@ -1,6 +1,6 @@
 use ariadne::{Label, Report, ReportKind, Source};
 
-use crate::common::error::{Error, R};
+use crate::common::error::{ParseError, R};
 use crate::common::inspect::inspect_program;
 use crate::parser::ast::*;
 
@@ -31,8 +31,8 @@ impl<'a> ParseResult<'a> {
 		println!("{}", inspect_program(program));
 	}
 
-	fn print_error(&self, error: &Error) {
-		let Error { ty, labels, note } = error;
+	fn print_error(&self, error: &ParseError) {
+		let ParseError { ty, labels, note } = error;
 
 		let location = labels[0].1;
 
