@@ -6,20 +6,24 @@ use crate::common::span::Span;
 use crate::lexer::token::{Token, TokenKind};
 use crate::lexer::Lexer;
 use crate::parser::ast::*;
+use crate::reader::Reader;
 
 pub struct Parser {
-	input: Lexer,
+	lexer: Lexer,
 }
 
 impl Parser {
-	pub fn new(input: Lexer) -> Self {
-		Self { input }
+	pub fn new(lexer: &str) -> Self {
+		let reader = Reader::new(lexer);
+		let lexer = Lexer::new(reader);
+
+		Self { lexer }
 	}
 
 	pub fn parse_program(&mut self) -> R<Program> {
 		let mut program = Vec::new();
 
-		while !self.input.eof() {
+		while !self.lexer.eof() {
 			let def = self.parse_def()?;
 			program.push(def);
 
@@ -153,13 +157,13 @@ impl Parser {
 		let lhs = match self.kind()? {
 			TokenKind::Boolean(b) => {
 				let kind = ExprKind::Boolean(*b);
-				self.input.next()?;
+				self.lexer.next()?;
 
 				Expr { kind, span: start }
 			},
 			TokenKind::Integer(i) => {
 				let kind = ExprKind::Integer(*i);
-				self.input.next()?;
+				self.lexer.next()?;
 
 				Expr { kind, span: start }
 			},
@@ -186,7 +190,7 @@ impl Parser {
 					let sep = self.consume(TokenKind::Separator)?;
 
 					if !self.kind_is(TokenKind::KwElse) {
-						self.input.restore(sep);
+						self.lexer.restore(sep);
 					}
 				}
 
@@ -236,7 +240,7 @@ impl Parser {
 				}
 			},
 			TokenKind::Operator(_) => {
-				let token = self.input.next()?;
+				let token = self.lexer.next()?;
 
 				let TokenKind::Operator(op) = token.kind else {
 					unreachable!();
@@ -327,7 +331,7 @@ impl Parser {
 						_ => (),
 					}
 
-					self.input.next()?;
+					self.lexer.next()?;
 
 					let rhs = self.parse_expr(bin_op.prec())?;
 					let end = rhs.span;
@@ -363,7 +367,7 @@ impl Parser {
 	}
 
 	fn parse_identifier(&mut self) -> R<Identifier> {
-		let token = self.input.next()?;
+		let token = self.lexer.next()?;
 
 		match token.kind {
 			TokenKind::Identifier(name) => {
@@ -380,7 +384,7 @@ impl Parser {
 
 	fn discard(&mut self, kind: TokenKind) -> R<()> {
 		if self.kind_is(kind) {
-			self.input.next()?;
+			self.lexer.next()?;
 		}
 
 		Ok(())
@@ -391,7 +395,7 @@ impl Parser {
 		let actual_kind = self.kind()?;
 
 		if *actual_kind == kind {
-			self.input.next()
+			self.lexer.next()
 		} else {
 			Err(unexpected_token(actual_kind, &kind, span))
 		}
@@ -405,10 +409,10 @@ impl Parser {
 	}
 
 	fn kind(&mut self) -> R<&TokenKind> {
-		self.input.peek().map(|t| &t.kind)
+		self.lexer.peek().map(|t| &t.kind)
 	}
 
 	fn span(&mut self) -> R<Span> {
-		self.input.peek().map(|t| t.span)
+		self.lexer.peek().map(|t| t.span)
 	}
 }
