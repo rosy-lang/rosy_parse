@@ -55,20 +55,12 @@ pub enum ExprKind {
 	If(Box<Expr>, Box<Expr>, Option<Box<Expr>>),
 	While(Box<Expr>, Box<Expr>),
 	Call(Box<Expr>, Vec<Expr>),
-	Unary(UnaryOp, Box<Expr>),
-	Binary(BinaryOp, Box<Expr>, Box<Expr>),
 	Block(Vec<Stmt>),
 }
 
 #[derive(Debug)]
 pub struct Identifier {
 	pub name: String,
-	pub span: Span,
-}
-
-#[derive(Debug)]
-pub struct UnaryOp {
-	pub lexeme: String,
 	pub span: Span,
 }
 

@@ -170,33 +170,6 @@ fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 				},
 			}
 		},
-		ExprKind::Unary(op, rhs) => {
-			formatdoc! {"
-				{p1}Unary
-				{p2}│╰ {span}
-				{}
-				{p2}╰ RHS
-				{}"
-			,
-				inspect_unary_op(&op, format!("{p2}"), false),
-				inspect_expr(&rhs, format!("{p2}  "), true),
-			}
-		},
-		ExprKind::Binary(op, lhs, rhs) => {
-			formatdoc! {"
-				{p1}Binary
-				{p2}│╰ {span}
-				{}
-				{p2}├ LHS
-				{}
-				{p2}╰ RHS
-				{}"
-			,
-				inspect_bin_op(&op, format!("{p2}"), false),
-				inspect_expr(&lhs, format!("{p2}│ "), true),
-				inspect_expr(&rhs, format!("{p2}  "), true),
-			}
-		},
 		ExprKind::Block(stmts) => {
 			let mut inspect_stmts: Vec<String> = Vec::new();
 
@@ -229,28 +202,6 @@ fn inspect_identifier(identifier: &Identifier, prefix: String, is_last: bool) ->
 
 	formatdoc! {"
 		{p1}Identifier({name})
-		{p2} ╰ {span}"
-	}
-}
-
-fn inspect_unary_op(op: &UnaryOp, prefix: String, is_last: bool) -> String {
-	let (p1, p2) = prefixes(prefix, is_last);
-
-	let UnaryOp { lexeme, span } = op;
-
-	formatdoc! {"
-		{p1}Operator({lexeme})
-		{p2} ╰ {span}"
-	}
-}
-
-fn inspect_bin_op(op: &BinaryOp, prefix: String, is_last: bool) -> String {
-	let (p1, p2) = prefixes(prefix, is_last);
-
-	let BinaryOp { lexeme, span } = op;
-
-	formatdoc! {"
-		{p1}Operator({lexeme})
 		{p2} ╰ {span}"
 	}
 }

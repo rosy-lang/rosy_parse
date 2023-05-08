@@ -242,16 +242,21 @@ impl Parser {
 					unreachable!();
 				};
 
-				let unary_op = UnaryOp {
-					lexeme: op,
+				let identifier = Identifier {
+					name: op,
 					span: start,
 				};
 
-				let rhs = self.parse_expr(0)?;
-				let end = rhs.span;
+				let func = Expr {
+					kind: ExprKind::Identifier(identifier),
+					span: start,
+				};
+
+				let arg = self.parse_expr(0)?;
+				let end = arg.span;
 
 				Expr {
-					kind: ExprKind::Unary(unary_op, Box::new(rhs)),
+					kind: ExprKind::Call(Box::new(func), vec![arg]),
 					span: Span::between(start, end),
 				}
 			},
@@ -327,8 +332,18 @@ impl Parser {
 					let rhs = self.parse_expr(bin_op.prec())?;
 					let end = rhs.span;
 
+					let identifier = Identifier {
+						name: bin_op.lexeme,
+						span: bin_op.span,
+					};
+
+					let func = Expr {
+						kind: ExprKind::Identifier(identifier),
+						span: bin_op.span,
+					};
+
 					lhs = Expr {
-						kind: ExprKind::Binary(bin_op, Box::new(lhs), Box::new(rhs)),
+						kind: ExprKind::Call(Box::new(func), vec![lhs, rhs]),
 						span: Span::between(start, end),
 					};
 				},
