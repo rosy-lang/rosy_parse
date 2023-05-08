@@ -9,34 +9,34 @@ use crate::lexer::token::{Token, TokenKind};
 use crate::reader::Reader;
 
 pub struct Lexer {
-	pub input: Reader,
+	reader: Reader,
 	buffer: VecDeque<Token>,
 	indents: Vec<usize>,
 }
 
 impl Lexer {
-	pub fn new(input: Reader) -> Self {
+	pub fn new(reader: Reader) -> Self {
 		Self {
-			input,
+			reader,
 			buffer: VecDeque::new(),
 			indents: Vec::new(),
 		}
 	}
 
 	pub fn generate(&mut self) -> R<()> {
-		let c = self.input.peek();
-		let start = self.input.index;
+		let c = self.reader.peek();
+		let start = self.reader.index;
 
 		if start == 0 || c == '\n' {
 			self.detect_indent()?;
 			self.generate()?;
 		} else if c.is_ascii_whitespace() {
-			self.input.skip_whitespace(false);
+			self.reader.skip_whitespace(false);
 			self.generate()?;
 		} else if self.is_identifier_start() {
 			let mut lexeme = String::new();
 			while self.is_identifier() {
-				lexeme.push(self.input.next());
+				lexeme.push(self.reader.next());
 			}
 
 			let is_integer = lexeme.chars().all(|c| c.is_ascii_digit());
@@ -69,7 +69,7 @@ impl Lexer {
 				_ => TokenKind::Identifier(lexeme),
 			};
 
-			let end = self.input.index;
+			let end = self.reader.index;
 
 			let token = Token {
 				kind,
@@ -82,14 +82,14 @@ impl Lexer {
 				self.prepare_block()?;
 			}
 		} else if self.is_symbol() {
-			let kind = match self.input.next() {
+			let kind = match self.reader.next() {
 				'(' => TokenKind::LParen,
 				')' => TokenKind::RParen,
 				',' => TokenKind::Comma,
 				_ => unreachable!(),
 			};
 
-			let end = self.input.index;
+			let end = self.reader.index;
 
 			let token = Token {
 				kind,
@@ -100,7 +100,7 @@ impl Lexer {
 		} else if self.is_operator() {
 			let mut lexeme = String::new();
 			while self.is_operator() {
-				lexeme.push(self.input.next());
+				lexeme.push(self.reader.next());
 			}
 
 			let mut is_layout_token = true;
@@ -113,7 +113,7 @@ impl Lexer {
 				},
 			};
 
-			let end = self.input.index;
+			let end = self.reader.index;
 
 			let token = Token {
 				kind,
@@ -125,11 +125,11 @@ impl Lexer {
 			if is_layout_token {
 				self.prepare_block()?;
 			}
-		} else if self.input.eof() {
+		} else if self.reader.eof() {
 			while self.indents.len() > 1 {
 				let token = Token {
 					kind: TokenKind::BlockEnd,
-					span: Span::pair(self.input.index),
+					span: Span::pair(self.reader.index),
 				};
 
 				self.buffer.push_back(token);
@@ -138,14 +138,14 @@ impl Lexer {
 
 			let token = Token {
 				kind: TokenKind::Eof,
-				span: Span::pair(self.input.index),
+				span: Span::pair(self.reader.index),
 			};
 
 			self.buffer.push_back(token);
 		} else {
-			self.input.next();
+			self.reader.next();
 
-			let end = self.input.index;
+			let end = self.reader.index;
 			let span = Span::new(start, end);
 
 			return Err(unrecognized_character(c, span));
@@ -157,22 +157,22 @@ impl Lexer {
 	fn prepare_block(&mut self) -> R<()> {
 		macro_rules! col {
 			() => {
-				self.input.col
+				self.reader.col
 			};
 		}
 
-		let start_ln = self.input.ln;
-		self.input.skip_whitespace(true);
-		if self.input.eof() {
+		let start_ln = self.reader.ln;
+		self.reader.skip_whitespace(true);
+		if self.reader.eof() {
 			return Ok(());
 		}
 
-		let end_ln = self.input.ln;
+		let end_ln = self.reader.ln;
 
 		let indent = self.indents[self.indents.len() - 1];
 		if col!() <= indent {
-			let start = self.input.index - col!() + 1;
-			let end = self.input.index;
+			let start = self.reader.index - col!() + 1;
+			let end = self.reader.index;
 
 			let span = Span::new(start, end);
 
@@ -182,7 +182,7 @@ impl Lexer {
 		if start_ln != end_ln {
 			let token = Token {
 				kind: TokenKind::BlockStart,
-				span: Span::pair(self.input.index),
+				span: Span::pair(self.reader.index),
 			};
 
 			self.buffer.push_back(token);
@@ -195,7 +195,7 @@ impl Lexer {
 	fn detect_indent(&mut self) -> R<()> {
 		macro_rules! col {
 			() => {
-				self.input.col
+				self.reader.col
 			};
 		}
 
@@ -205,8 +205,8 @@ impl Lexer {
 			};
 		}
 
-		self.input.skip_whitespace(true);
-		if self.input.eof() {
+		self.reader.skip_whitespace(true);
+		if self.reader.eof() {
 			return Ok(());
 		}
 
@@ -219,7 +219,7 @@ impl Lexer {
 			while col!() < indent!() {
 				let token = Token {
 					kind: TokenKind::BlockEnd,
-					span: Span::pair(self.input.index),
+					span: Span::pair(self.reader.index),
 				};
 
 				self.buffer.push_back(token);
@@ -227,8 +227,8 @@ impl Lexer {
 			}
 
 			if col!() != indent!() {
-				let start = self.input.index - col!() + 1;
-				let end = self.input.index;
+				let start = self.reader.index - col!() + 1;
+				let end = self.reader.index;
 
 				let span = Span::new(start, end);
 				return Err(inconsistent_indent(col!() - 1, span));
@@ -238,7 +238,7 @@ impl Lexer {
 		if col!() == indent!() {
 			let token = Token {
 				kind: TokenKind::Separator,
-				span: Span::pair(self.input.index),
+				span: Span::pair(self.reader.index),
 			};
 
 			self.buffer.push_back(token);
@@ -248,22 +248,22 @@ impl Lexer {
 	}
 
 	fn is_identifier(&mut self) -> bool {
-		let c = self.input.peek();
+		let c = self.reader.peek();
 		self.is_identifier_start() || "!'?".contains(c)
 	}
 
 	fn is_identifier_start(&mut self) -> bool {
-		let c = self.input.peek();
+		let c = self.reader.peek();
 		c.is_ascii_alphanumeric() || c == '_'
 	}
 
 	fn is_symbol(&mut self) -> bool {
-		let c = self.input.peek();
+		let c = self.reader.peek();
 		"(),".contains(c)
 	}
 
 	fn is_operator(&mut self) -> bool {
-		let c = self.input.peek();
+		let c = self.reader.peek();
 		"!*+-/<=>".contains(c)
 	}
 

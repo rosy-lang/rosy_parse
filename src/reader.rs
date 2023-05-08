@@ -5,19 +5,19 @@ pub struct Reader {
 	pub index: usize,
 	pub ln: usize,
 	pub col: usize,
-	input: Peekable<IntoIter<char>>,
+	chars: Peekable<IntoIter<char>>,
 }
 
 impl Reader {
-	pub fn new(input: &str) -> Self {
+	pub fn new(source: &str) -> Self {
 		// TODO: optimize memory usage
-		let chars = String::from(input).chars().collect::<Vec<_>>();
+		let chars = String::from(source).chars().collect::<Vec<_>>();
 
 		let reader = Self {
 			index: 0,
 			ln: 1,
 			col: 1,
-			input: chars.into_iter().peekable(),
+			chars: chars.into_iter().peekable(),
 		};
 
 		reader
@@ -38,7 +38,7 @@ impl Reader {
 	}
 
 	pub fn peek(&mut self) -> char {
-		match self.input.peek() {
+		match self.chars.peek() {
 			Some(c) => c.clone(),
 			None => '\0',
 		}
@@ -46,7 +46,7 @@ impl Reader {
 
 	pub fn next(&mut self) -> char {
 		let c = self.peek();
-		self.input.next();
+		self.chars.next();
 
 		if c == '\n' {
 			self.ln += 1;
