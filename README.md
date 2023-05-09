@@ -13,7 +13,7 @@ fn main() {
 	parse_result.print();
 
 	match parse_result.value {
-		Ok(program) => todo!(),
+		Ok(ast) => todo!(),
 		Err(err) => todo!(),
 	}
 }

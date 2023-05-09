@@ -2,14 +2,14 @@ use indoc::formatdoc;
 
 use crate::parser::ast::*;
 
-pub fn inspect_program(program: &Program) -> String {
-	let mut lines = vec![String::from("╰ Program")];
+pub fn inspect_ast(ast: &Ast) -> String {
+	let mut lines = vec![String::from("╰ AST")];
 
-	for i in 0..program.len() {
+	for i in 0..ast.len() {
 		let prefix = String::from("  ");
-		let is_last = i == program.len() - 1;
+		let is_last = i == ast.len() - 1;
 
-		let str = match &program[i].kind {
+		let str = match &ast[i].kind {
 			DefKind::Var(var_def) => inspect_var_def(var_def, prefix, is_last),
 			DefKind::Fn(fn_def) => inspect_fn_def(fn_def, prefix, is_last),
 		};

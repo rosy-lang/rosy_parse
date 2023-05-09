@@ -1,18 +1,18 @@
 use ariadne::{Label, Report, ReportKind, Source};
 
 use crate::common::error::{ParseError, R};
-use crate::common::inspect::inspect_program;
+use crate::common::inspect::inspect_ast;
 use crate::parser::ast::*;
 
 #[derive(Debug)]
 pub struct ParseResult<'a> {
-	pub value: R<Program>,
+	pub value: R<Ast>,
 	source: &'a str,
 	filename: &'a str,
 }
 
 impl<'a> ParseResult<'a> {
-	pub fn new(value: R<Program>, source: &'a str, filename: &'a str) -> Self {
+	pub fn new(value: R<Ast>, source: &'a str, filename: &'a str) -> Self {
 		Self {
 			value,
 			source,
@@ -22,13 +22,13 @@ impl<'a> ParseResult<'a> {
 
 	pub fn print(&self) {
 		match &self.value {
-			Ok(program) => self.print_program(program),
+			Ok(ast) => self.print_ast(ast),
 			Err(err) => self.print_error(err),
 		}
 	}
 
-	fn print_program(&self, program: &Program) {
-		println!("{}", inspect_program(program));
+	fn print_ast(&self, ast: &Ast) {
+		println!("{}", inspect_ast(ast));
 	}
 
 	fn print_error(&self, error: &ParseError) {
