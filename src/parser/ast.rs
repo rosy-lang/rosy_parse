@@ -1,6 +1,6 @@
 use crate::common::span::Span;
 
-pub type Program = Vec<Def>;
+pub type Ast = Vec<Def>;
 
 #[derive(Debug)]
 pub struct Def {

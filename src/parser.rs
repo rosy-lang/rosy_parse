@@ -20,7 +20,7 @@ impl Parser {
 		Self { lexer }
 	}
 
-	pub fn parse_program(&mut self) -> R<Program> {
+	pub fn parse(&mut self) -> R<Ast> {
 		let mut program = Vec::new();
 
 		while !self.lexer.eof() {

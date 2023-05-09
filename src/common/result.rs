@@ -6,13 +6,13 @@ use crate::parser::ast::*;
 
 #[derive(Debug)]
 pub struct ParseResult<'a> {
-	pub value: R<Program>,
+	pub value: R<Ast>,
 	source: &'a str,
 	filename: &'a str,
 }
 
 impl<'a> ParseResult<'a> {
-	pub fn new(value: R<Program>, source: &'a str, filename: &'a str) -> Self {
+	pub fn new(value: R<Ast>, source: &'a str, filename: &'a str) -> Self {
 		Self {
 			value,
 			source,
@@ -27,7 +27,7 @@ impl<'a> ParseResult<'a> {
 		}
 	}
 
-	fn print_program(&self, program: &Program) {
+	fn print_program(&self, program: &Ast) {
 		println!("{}", inspect_program(program));
 	}
 
