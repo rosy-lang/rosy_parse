@@ -2,7 +2,7 @@ use indoc::formatdoc;
 
 use crate::parser::ast::*;
 
-pub fn inspect_program(ast: &Ast) -> String {
+pub fn inspect_ast(ast: &Ast) -> String {
 	let mut lines = vec![String::from("╰ AST")];
 
 	for i in 0..ast.len() {

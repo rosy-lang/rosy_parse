@@ -1,7 +1,7 @@
 use ariadne::{Label, Report, ReportKind, Source};
 
 use crate::common::error::{ParseError, R};
-use crate::common::inspect::inspect_program;
+use crate::common::inspect::inspect_ast;
 use crate::parser::ast::*;
 
 #[derive(Debug)]
@@ -22,13 +22,13 @@ impl<'a> ParseResult<'a> {
 
 	pub fn print(&self) {
 		match &self.value {
-			Ok(program) => self.print_program(program),
+			Ok(ast) => self.print_ast(ast),
 			Err(err) => self.print_error(err),
 		}
 	}
 
-	fn print_program(&self, program: &Ast) {
-		println!("{}", inspect_program(program));
+	fn print_ast(&self, ast: &Ast) {
+		println!("{}", inspect_ast(ast));
 	}
 
 	fn print_error(&self, error: &ParseError) {

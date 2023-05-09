@@ -21,16 +21,16 @@ impl Parser {
 	}
 
 	pub fn parse(&mut self) -> R<Ast> {
-		let mut program = Vec::new();
+		let mut ast = Vec::new();
 
 		while !self.lexer.eof() {
 			let def = self.parse_def()?;
-			program.push(def);
+			ast.push(def);
 
 			self.discard(TokenKind::Separator)?;
 		}
 
-		Ok(program)
+		Ok(ast)
 	}
 
 	fn parse_def(&mut self) -> R<Def> {
