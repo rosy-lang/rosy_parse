@@ -1,7 +1,7 @@
 pub mod common;
+pub mod parser;
 
 mod lexer;
-mod parser;
 mod reader;
 
 use crate::common::error::R;
