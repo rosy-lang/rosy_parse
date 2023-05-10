@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
+use std::ops::Range;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Span(pub usize, pub usize);
@@ -20,5 +21,11 @@ impl Span {
 impl Display for Span {
 	fn fmt(&self, f: &mut Formatter) -> Result {
 		write!(f, "{}..{}", self.0, self.1)
+	}
+}
+
+impl From<Span> for Range<usize> {
+	fn from(span: Span) -> Range<usize> {
+		span.0..span.1
 	}
 }

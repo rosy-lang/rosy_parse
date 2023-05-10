@@ -1,38 +1,50 @@
+use rosy_error::RosyError;
 use unicode_names2::name;
 
-use crate::common::error::ParseError;
 use crate::common::span::Span;
 
-pub fn inconsistent_indent(indent: usize, span: Span) -> ParseError {
-	let ty = String::from("inconsistent indent");
+pub fn inconsistent_indent(indent: usize, span: Span) -> RosyError {
+	let title = String::from("inconsistent indent");
 
 	let msg = format!("indent level: {}", indent);
-	let labels = vec![(msg, span)];
+	let labels = vec![(msg, span.into())];
 
-	let note = String::from("indent level does not match any of the previous indent levels");
+	let description = String::from("indent level does not match any of the previous indent levels");
 
-	ParseError { ty, labels, note }
+	RosyError {
+		title,
+		description,
+		labels,
+	}
 }
 
-pub fn insufficient_indent(indent: usize, min_indent: usize, span: Span) -> ParseError {
-	let ty = String::from("insufficient indent");
+pub fn insufficient_indent(indent: usize, min_indent: usize, span: Span) -> RosyError {
+	let title = String::from("insufficient indent");
 
 	let msg = format!("indent level: {}", indent);
-	let labels = vec![(msg, span)];
+	let labels = vec![(msg, span.into())];
 
-	let note = format!("indent level needs to be at least {min_indent}");
+	let description = format!("indent level needs to be at least {min_indent}");
 
-	ParseError { ty, labels, note }
+	RosyError {
+		title,
+		description,
+		labels,
+	}
 }
 
-pub fn unrecognized_character(c: char, span: Span) -> ParseError {
-	let ty = String::from("unrecognized character");
+pub fn unrecognized_character(c: char, span: Span) -> RosyError {
+	let title = String::from("unrecognized character");
 
 	let char_name = name(c).map(|n| n.to_string()).unwrap_or(String::new());
 	let msg = format!("character: {char_name} ({:#x})", c as u32);
-	let labels = vec![(msg, span)];
+	let labels = vec![(msg, span.into())];
 
-	let note = format!("character is not recognized as a valid identifier or symbol");
+	let description = format!("character is not recognized as a valid identifier or symbol");
 
-	ParseError { ty, labels, note }
+	RosyError {
+		title,
+		description,
+		labels,
+	}
 }

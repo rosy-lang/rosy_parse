@@ -1,13 +1,13 @@
-mod common;
+pub mod common;
+
 mod lexer;
 mod parser;
 mod reader;
 
-use crate::common::result::ParseResult;
+use crate::common::error::R;
+use crate::parser::ast::Ast;
 use crate::parser::Parser;
 
-pub fn parse<'a>(source: &'a str, filename: &'a str) -> ParseResult<'a> {
-	let mut parser = Parser::new(source);
-
-	ParseResult::new(parser.parse(), source, filename)
+pub fn parse<'a>(source: &'a str) -> R<Ast> {
+	Parser::new(source).parse()
 }
