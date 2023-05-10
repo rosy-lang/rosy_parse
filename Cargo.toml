@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ariadne = { version = "0.2.0", features = ["auto-color"] }
 indoc = "2"
+rosy_error = { git = "https://github.com/rosy-lang/rosy_error", branch = "main" }
 unicode_names2 = "0.6.0"
