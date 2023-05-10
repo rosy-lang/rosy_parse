@@ -27,7 +27,11 @@ impl Lexer {
 		let c = self.reader.peek();
 		let start = self.reader.index;
 
-		if start == 0 || c == '\n' {
+		if start == 0 {
+			self.detect_indent()?;
+		}
+
+		if c == '\n' {
 			self.detect_indent()?;
 			self.generate()?;
 		} else if c.is_ascii_whitespace() {
