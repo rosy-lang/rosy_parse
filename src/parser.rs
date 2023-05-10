@@ -24,8 +24,8 @@ impl Parser {
 		let mut ast = Vec::new();
 
 		while !self.lexer.eof() {
-			let def = self.parse_def()?;
-			ast.push(def);
+			let decl = self.parse_decl()?;
+			ast.push(decl);
 
 			self.discard(TokenKind::Separator)?;
 		}
@@ -33,34 +33,23 @@ impl Parser {
 		Ok(ast)
 	}
 
-	fn parse_def(&mut self) -> R<Def> {
+	fn parse_decl(&mut self) -> R<Decl> {
 		let identifier = self.parse_identifier()?;
 		let span = self.span()?;
 
 		match self.kind()? {
-			TokenKind::Equal => {
-				let var_def = self.parse_var_def(identifier)?;
-				let span = var_def.span;
-
-				let def = Def {
-					kind: DefKind::Var(var_def),
-					span,
-				};
-
-				Ok(def)
-			},
 			TokenKind::LParen => {
 				let fn_def = self.parse_fn_def(identifier)?;
 				let span = fn_def.span;
 
-				let def = Def {
-					kind: DefKind::Fn(fn_def),
+				let decl = Decl {
+					kind: DeclKind::Fn(fn_def),
 					span,
 				};
 
-				Ok(def)
+				Ok(decl)
 			},
-			kind => Err(invalid_definition(kind, identifier.span, span)),
+			kind => Err(invalid_declaration(kind, identifier.span, span)),
 		}
 	}
 

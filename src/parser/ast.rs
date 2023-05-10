@@ -1,16 +1,15 @@
 use crate::common::span::Span;
 
-pub type Ast = Vec<Def>;
+pub type Ast = Vec<Decl>;
 
 #[derive(Debug)]
-pub struct Def {
-	pub kind: DefKind,
+pub struct Decl {
+	pub kind: DeclKind,
 	pub span: Span,
 }
 
 #[derive(Debug)]
-pub enum DefKind {
-	Var(VarDef),
+pub enum DeclKind {
 	Fn(FnDef),
 }
 

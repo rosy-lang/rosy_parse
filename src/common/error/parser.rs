@@ -2,16 +2,15 @@ use crate::common::error::ParseError;
 use crate::common::span::Span;
 use crate::lexer::token::TokenKind;
 
-pub fn invalid_definition(kind: &TokenKind, span1: Span, span2: Span) -> ParseError {
-	let ty = String::from("invalid definition");
+pub fn invalid_declaration(kind: &TokenKind, span1: Span, span2: Span) -> ParseError {
+	let ty = String::from("invalid declaration");
 
 	let msg1 = String::from("identifier to be defined");
 	let msg2 = format!("found: {}", kind.name());
 	let labels = vec![(msg1, span1), (msg2, span2)];
 
 	let note = format!(
-		"identifier must be followed by {} or {}",
-		TokenKind::Equal.name(),
+		"identifier must be followed by {} for function definitions",
 		TokenKind::LParen.name(),
 	);
 
