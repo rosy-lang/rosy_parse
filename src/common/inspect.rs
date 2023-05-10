@@ -10,8 +10,7 @@ pub fn inspect_ast(ast: &Ast) -> String {
 		let is_last = i == ast.len() - 1;
 
 		let str = match &ast[i].kind {
-			DefKind::Var(var_def) => inspect_var_def(var_def, prefix, is_last),
-			DefKind::Fn(fn_def) => inspect_fn_def(fn_def, prefix, is_last),
+			DeclKind::Fn(fn_def) => inspect_fn_def(fn_def, prefix, is_last),
 		};
 
 		lines.push(str);
