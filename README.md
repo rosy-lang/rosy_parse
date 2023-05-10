@@ -7,12 +7,9 @@ use rosy_parse::parse;
 
 fn main() {
 	let source = include_str!("path/to/main.rosy");
-	let filename = "main.rosy";
+	let parse_result = parse(source);
 
-	let parse_result = parse(source, filename);
-	parse_result.print();
-
-	match parse_result.value {
+	match parse_result {
 		Ok(ast) => todo!(),
 		Err(err) => todo!(),
 	}
