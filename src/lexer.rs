@@ -10,33 +10,33 @@ use crate::reader::Reader;
 
 pub struct Lexer {
 	reader: Reader,
-	buffer: VecDeque<Token>,
+	buffer: VecDeque<R<Token>>,
 	indents: Vec<usize>,
 }
 
 impl Lexer {
 	pub fn new(reader: Reader) -> Self {
-		Self {
+		let mut lexer = Self {
 			reader,
 			buffer: VecDeque::new(),
 			indents: Vec::new(),
-		}
+		};
+
+		lexer.detect_indent();
+
+		lexer
 	}
 
-	pub fn generate(&mut self) -> R<()> {
+	pub fn generate(&mut self) {
 		let c = self.reader.peek();
 		let start = self.reader.index;
 
-		if start == 0 {
-			self.detect_indent()?;
-		}
-
 		if c == '\n' {
-			self.detect_indent()?;
-			self.generate()?;
+			self.detect_indent();
+			self.generate();
 		} else if c.is_ascii_whitespace() {
 			self.reader.skip_whitespace(false);
-			self.generate()?;
+			self.generate();
 		} else if self.is_identifier_start() {
 			let mut lexeme = String::new();
 			while self.is_identifier() {
@@ -80,10 +80,10 @@ impl Lexer {
 				span: Span::new(start, end),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 
 			if is_layout_token {
-				self.prepare_block()?;
+				self.prepare_block();
 			}
 		} else if self.is_symbol() {
 			let kind = match self.reader.next() {
@@ -100,7 +100,7 @@ impl Lexer {
 				span: Span::new(start, end),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 		} else if self.is_operator() {
 			let mut lexeme = String::new();
 			while self.is_operator() {
@@ -124,10 +124,10 @@ impl Lexer {
 				span: Span::new(start, end),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 
 			if is_layout_token {
-				self.prepare_block()?;
+				self.prepare_block();
 			}
 		} else if self.reader.eof() {
 			while self.indents.len() > 1 {
@@ -136,7 +136,7 @@ impl Lexer {
 					span: Span::pair(self.reader.index),
 				};
 
-				self.buffer.push_back(token);
+				self.buffer.push_back(Ok(token));
 				self.indents.pop();
 			}
 
@@ -145,20 +145,20 @@ impl Lexer {
 				span: Span::pair(self.reader.index),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 		} else {
 			self.reader.next();
 
 			let end = self.reader.index;
 			let span = Span::new(start, end);
 
-			return Err(unrecognized_character(c, span));
-		}
+			let err = unrecognized_character(c, span);
 
-		Ok(())
+			self.buffer.push_back(Err(err));
+		}
 	}
 
-	fn prepare_block(&mut self) -> R<()> {
+	fn prepare_block(&mut self) {
 		macro_rules! col {
 			() => {
 				self.reader.col
@@ -168,7 +168,7 @@ impl Lexer {
 		let start_ln = self.reader.ln;
 		self.reader.skip_whitespace(true);
 		if self.reader.eof() {
-			return Ok(());
+			return;
 		}
 
 		let end_ln = self.reader.ln;
@@ -180,23 +180,21 @@ impl Lexer {
 
 			let span = Span::new(start, end);
 
-			return Err(insufficient_indent(col!() - 1, indent, span));
-		}
+			let err = insufficient_indent(col!() - 1, indent, span);
 
-		if start_ln != end_ln {
+			self.buffer.push_back(Err(err));
+		} else if start_ln != end_ln {
 			let token = Token {
 				kind: TokenKind::BlockStart,
 				span: Span::pair(self.reader.index),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 			self.indents.push(col!());
 		}
-
-		Ok(())
 	}
 
-	fn detect_indent(&mut self) -> R<()> {
+	fn detect_indent(&mut self) {
 		macro_rules! col {
 			() => {
 				self.reader.col
@@ -211,12 +209,11 @@ impl Lexer {
 
 		self.reader.skip_whitespace(true);
 		if self.reader.eof() {
-			return Ok(());
+			return;
 		}
 
 		if self.indents.is_empty() {
-			self.indents.push(1);
-			return Ok(());
+			return self.indents.push(1);
 		}
 
 		if col!() < indent!() {
@@ -226,7 +223,7 @@ impl Lexer {
 					span: Span::pair(self.reader.index),
 				};
 
-				self.buffer.push_back(token);
+				self.buffer.push_back(Ok(token));
 				self.indents.pop();
 			}
 
@@ -235,7 +232,10 @@ impl Lexer {
 				let end = self.reader.index;
 
 				let span = Span::new(start, end);
-				return Err(inconsistent_indent(col!() - 1, span));
+
+				let err = inconsistent_indent(col!() - 1, span);
+
+				self.buffer.push_back(Err(err))
 			}
 		}
 
@@ -245,10 +245,8 @@ impl Lexer {
 				span: Span::pair(self.reader.index),
 			};
 
-			self.buffer.push_back(token);
+			self.buffer.push_back(Ok(token));
 		}
-
-		Ok(())
 	}
 
 	fn is_identifier(&mut self) -> bool {
@@ -273,26 +271,23 @@ impl Lexer {
 
 	pub fn peek(&mut self) -> R<&Token> {
 		if self.buffer.is_empty() {
-			self.generate()?;
+			self.generate();
 		}
 
-		let token = self.buffer.front().unwrap();
-
-		Ok(token)
+		let result = self.buffer.front().unwrap().as_ref();
+		result.map_err(|e| e.clone())
 	}
 
 	pub fn next(&mut self) -> R<Token> {
 		if self.buffer.is_empty() {
-			self.generate()?;
+			self.generate();
 		}
 
-		let token = self.buffer.pop_front().unwrap();
-
-		Ok(token)
+		self.buffer.pop_front().unwrap()
 	}
 
 	pub fn restore(&mut self, token: Token) {
-		self.buffer.push_front(token);
+		self.buffer.push_front(Ok(token));
 	}
 
 	pub fn eof(&mut self) -> bool {
