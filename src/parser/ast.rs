@@ -10,6 +10,7 @@ pub struct Decl {
 
 #[derive(Debug)]
 pub enum DeclKind {
+	Ty(TyDecl),
 	Fn(FnDef),
 }
 
@@ -21,23 +22,9 @@ pub struct Stmt {
 
 #[derive(Debug)]
 pub enum StmtKind {
+	TyDecl(TyDecl),
 	VarDef(VarDef),
 	Expr(Expr),
-}
-
-#[derive(Debug)]
-pub struct VarDef {
-	pub var: Identifier,
-	pub value: Expr,
-	pub span: Span,
-}
-
-#[derive(Debug)]
-pub struct FnDef {
-	pub func: Identifier,
-	pub params: Vec<Identifier>,
-	pub body: Expr,
-	pub span: Span,
 }
 
 #[derive(Debug)]
@@ -50,11 +37,46 @@ pub struct Expr {
 pub enum ExprKind {
 	Boolean(bool),
 	Integer(i64),
-	Identifier(Identifier),
+	Identifier(String),
 	If(Box<Expr>, Box<Expr>, Option<Box<Expr>>),
 	While(Box<Expr>, Box<Expr>),
 	Call(Box<Expr>, Vec<Expr>),
 	Block(Vec<Stmt>),
+}
+
+#[derive(Debug)]
+pub struct Ty {
+	pub kind: TyKind,
+	pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum TyKind {
+	Basic(String),
+	Tuple(Vec<Ty>),
+	Function(Box<Ty>, Box<Ty>),
+}
+
+#[derive(Debug)]
+pub struct TyDecl {
+	pub identifier: Identifier,
+	pub ty: Ty,
+	pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct FnDef {
+	pub func: Identifier,
+	pub params: Vec<Identifier>,
+	pub body: Expr,
+	pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct VarDef {
+	pub var: Identifier,
+	pub value: Expr,
+	pub span: Span,
 }
 
 #[derive(Debug)]

@@ -90,6 +90,7 @@ impl Lexer {
 				'(' => TokenKind::LParen,
 				')' => TokenKind::RParen,
 				',' => TokenKind::Comma,
+				':' => TokenKind::Colon,
 				_ => unreachable!(),
 			};
 
@@ -261,7 +262,7 @@ impl Lexer {
 
 	fn is_symbol(&mut self) -> bool {
 		let c = self.reader.peek();
-		"(),".contains(c)
+		"(),:".contains(c)
 	}
 
 	fn is_operator(&mut self) -> bool {

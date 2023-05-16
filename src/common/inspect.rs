@@ -10,6 +10,7 @@ pub fn inspect_ast(ast: &Ast) -> String {
 		let is_last = i == ast.len() - 1;
 
 		let str = match &ast[i].kind {
+			DeclKind::Ty(ty_decl) => inspect_ty_decl(ty_decl, prefix, is_last),
 			DeclKind::Fn(fn_def) => inspect_fn_def(fn_def, prefix, is_last),
 		};
 
@@ -19,21 +20,27 @@ pub fn inspect_ast(ast: &Ast) -> String {
 	lines.join("\n")
 }
 
-fn inspect_var_def(var_def: &VarDef, prefix: String, is_last: bool) -> String {
+fn inspect_ty_decl(ty_decl: &TyDecl, prefix: String, is_last: bool) -> String {
 	let (p1, p2) = prefixes(prefix, is_last);
 
-	let VarDef { var, value, span } = var_def;
+	let TyDecl {
+		identifier,
+		ty,
+		span,
+	} = ty_decl;
 
 	formatdoc! {"
-		{p1}Define
+		{p1}Type Declaration
 		{p2}│╰ {span}
-		{p2}├ Variable
+		{p2}├ Identifier
 		{}
-		{p2}╰ Value
-		{}"
+		{p2}╰ Type
+		{p2}  │╰ {}
+		{p2}  ╰ {}"
 	,
-		inspect_identifier(&var, format!("{p2}│ "), true),
-		inspect_expr(&value, format!("{p2}  "), true),
+		inspect_identifier(&identifier, format!("{p2}│ "), true),
+		ty.span,
+		inspect_ty(&ty),
 	}
 }
 
@@ -78,6 +85,24 @@ fn inspect_fn_def(fn_def: &FnDef, prefix: String, is_last: bool) -> String {
 	}
 }
 
+fn inspect_var_def(var_def: &VarDef, prefix: String, is_last: bool) -> String {
+	let (p1, p2) = prefixes(prefix, is_last);
+
+	let VarDef { var, value, span } = var_def;
+
+	formatdoc! {"
+		{p1}Define
+		{p2}│╰ {span}
+		{p2}├ Variable
+		{}
+		{p2}╰ Value
+		{}"
+	,
+		inspect_identifier(&var, format!("{p2}│ "), true),
+		inspect_expr(&value, format!("{p2}  "), true),
+	}
+}
+
 fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 	let (p1, p2) = prefixes(prefix, is_last);
 
@@ -93,10 +118,8 @@ fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 			{p2} ╰ {span}"
 		},
 		ExprKind::Identifier(i) => formatdoc! {"
-			{p1}Identifier({})
+			{p1}Identifier({i})
 			{p2} ╰ {span}"
-		,
-			i.name,
 		},
 		ExprKind::If(cond, t, e) => {
 			if let Some(e) = e {
@@ -177,6 +200,7 @@ fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 				let is_last = i == stmts.len() - 1;
 
 				let str = match &stmts[i].kind {
+					StmtKind::TyDecl(ty_decl) => inspect_ty_decl(ty_decl, prefix, is_last),
 					StmtKind::VarDef(var_def) => inspect_var_def(var_def, prefix, is_last),
 					StmtKind::Expr(expr) => inspect_expr(expr, prefix, is_last),
 				};
@@ -190,6 +214,24 @@ fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 				{}",
 				inspect_stmts.join("\n"),
 			}
+		},
+	}
+}
+
+fn inspect_ty(ty: &Ty) -> String {
+	match &ty.kind {
+		TyKind::Basic(b) => b.clone(),
+		TyKind::Tuple(tys) => {
+			format!(
+				"({})",
+				tys.iter().map(|ty| inspect_ty(ty)).collect::<Vec<_>>().join(", "))
+		},
+		TyKind::Function(t1, t2) => {
+			format!(
+				"{} -> {}",
+				inspect_ty(t1),
+				inspect_ty(t2)
+			)
 		},
 	}
 }
