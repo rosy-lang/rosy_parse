@@ -49,6 +49,17 @@ impl Parser {
 
 				Ok(decl)
 			},
+			TokenKind::Colon => {
+				let ty_decl = self.parse_ty_decl(identifier)?;
+				let span = ty_decl.span;
+
+				let decl = Decl {
+					kind: DeclKind::Ty(ty_decl),
+					span,
+				};
+
+				Ok(decl)
+			},
 			kind => Err(invalid_declaration(kind, identifier.span, span)),
 		}
 	}
@@ -57,7 +68,15 @@ impl Parser {
 		let stmt = if matches!(self.kind()?, TokenKind::Identifier(_)) {
 			let identifier = self.parse_identifier()?;
 
-			if self.kind_is(TokenKind::Equal) {
+			if self.kind_is(TokenKind::Colon) {
+				let ty_decl = self.parse_ty_decl(identifier)?;
+				let span = ty_decl.span;
+
+				Stmt {
+					kind: StmtKind::TyDecl(ty_decl),
+					span,
+				}
+			} else if self.kind_is(TokenKind::Equal) {
 				let var_def = self.parse_var_def(identifier)?;
 				let span = var_def.span;
 
@@ -69,7 +88,7 @@ impl Parser {
 				let span = identifier.span;
 
 				let expr = Expr {
-					kind: ExprKind::Identifier(identifier),
+					kind: ExprKind::Identifier(identifier.name),
 					span,
 				};
 
@@ -93,21 +112,21 @@ impl Parser {
 		Ok(stmt)
 	}
 
-	fn parse_var_def(&mut self, identifier: Identifier) -> R<VarDef> {
-		self.consume(TokenKind::Equal)?;
+	fn parse_ty_decl(&mut self, identifier: Identifier) -> R<TyDecl> {
+		self.consume(TokenKind::Colon)?;
 
-		let expr = self.parse_expr(0)?;
+		let ty = self.parse_ty()?;
 
 		let start = identifier.span;
-		let end = expr.span;
+		let end = ty.span;
 
-		let var_def = VarDef {
-			var: identifier,
-			value: expr,
+		let ty_decl = TyDecl {
+			identifier,
+			ty,
 			span: Span::between(start, end),
 		};
 
-		Ok(var_def)
+		Ok(ty_decl)
 	}
 
 	fn parse_fn_def(&mut self, func: Identifier) -> R<FnDef> {
@@ -140,6 +159,23 @@ impl Parser {
 		Ok(fn_def)
 	}
 
+	fn parse_var_def(&mut self, identifier: Identifier) -> R<VarDef> {
+		self.consume(TokenKind::Equal)?;
+
+		let expr = self.parse_expr(0)?;
+
+		let start = identifier.span;
+		let end = expr.span;
+
+		let var_def = VarDef {
+			var: identifier,
+			value: expr,
+			span: Span::between(start, end),
+		};
+
+		Ok(var_def)
+	}
+
 	fn parse_expr(&mut self, prec: usize) -> R<Expr> {
 		let start = self.span()?;
 
@@ -156,13 +192,11 @@ impl Parser {
 
 				Expr { kind, span: start }
 			},
-			TokenKind::Identifier(_) => {
-				let identifier = self.parse_identifier()?;
+			TokenKind::Identifier(i) => {
+				let kind = ExprKind::Identifier(i.clone());
+				self.lexer.next()?;
 
-				Expr {
-					kind: ExprKind::Identifier(identifier),
-					span: start,
-				}
+				Expr { kind, span: start }
 			},
 			TokenKind::KwIf => {
 				self.consume(TokenKind::KwIf)?;
@@ -235,13 +269,8 @@ impl Parser {
 					unreachable!();
 				};
 
-				let identifier = Identifier {
-					name: op,
-					span: start,
-				};
-
 				let func = Expr {
-					kind: ExprKind::Identifier(identifier),
+					kind: ExprKind::Identifier(op),
 					span: start,
 				};
 
@@ -325,13 +354,8 @@ impl Parser {
 					let rhs = self.parse_expr(bin_op.prec())?;
 					let end = rhs.span;
 
-					let identifier = Identifier {
-						name: bin_op.lexeme,
-						span: bin_op.span,
-					};
-
 					let func = Expr {
-						kind: ExprKind::Identifier(identifier),
+						kind: ExprKind::Identifier(bin_op.lexeme),
 						span: bin_op.span,
 					};
 
@@ -353,6 +377,57 @@ impl Parser {
 		}
 
 		Ok(lhs)
+	}
+
+	fn parse_ty(&mut self) -> R<Ty> {
+		let start = self.span()?;
+
+		let lhs = match self.kind()? {
+			TokenKind::Identifier(i) => {
+				let kind = TyKind::Basic(i.clone());
+				self.lexer.next()?;
+
+				Ty { kind, span: start }
+			},
+			TokenKind::LParen => {
+				self.consume(TokenKind::LParen)?;
+
+				let mut tys = Vec::new();
+
+				while !self.kind_is(TokenKind::RParen) {
+					let ty = self.parse_ty()?;
+					tys.push(ty);
+
+					self.discard(TokenKind::Comma)?;
+				}
+
+				let token = self.consume(TokenKind::RParen)?;
+				let end = token.span;
+
+				Ty {
+					kind: TyKind::Tuple(tys),
+					span: Span::between(start, end),
+				}
+			},
+			// TODO: error properly
+			_ => panic!("not a valid type declaration"),
+		};
+
+		let ty = if self.kind_is(TokenKind::RArrow) {
+			self.consume(TokenKind::RArrow)?;
+
+			let rhs = self.parse_ty()?;
+			let end = rhs.span;
+
+			Ty {
+				kind: TyKind::Function(Box::new(lhs), Box::new(rhs)),
+				span: Span::between(start, end),
+			}
+		} else {
+			lhs
+		};
+
+		Ok(ty)
 	}
 
 	fn parse_identifier(&mut self) -> R<Identifier> {
