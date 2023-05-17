@@ -382,9 +382,9 @@ impl Parser {
 	fn parse_ty(&mut self) -> R<Ty> {
 		let start = self.span()?;
 
-		let lhs = match self.kind()? {
+		let mut lhs = match self.kind()? {
 			TokenKind::Identifier(i) => {
-				let kind = TyKind::Basic(i.clone());
+				let kind = TyKind::Single(i.clone());
 				self.lexer.next()?;
 
 				Ty { kind, span: start }
@@ -413,21 +413,24 @@ impl Parser {
 			_ => panic!("not a valid type declaration"),
 		};
 
-		let ty = if self.kind_is(TokenKind::RArrow) {
+		if self.kind_is(TokenKind::RArrow) {
 			self.consume(TokenKind::RArrow)?;
 
 			let rhs = self.parse_ty()?;
 			let end = rhs.span;
 
-			Ty {
-				kind: TyKind::Function(Box::new(lhs), Box::new(rhs)),
+			let kind = match lhs.kind {
+				TyKind::Tuple(tys) => TyKind::Function(tys, Box::new(rhs)),
+				_ => TyKind::Function(vec![lhs], Box::new(rhs)),
+			};
+
+			lhs = Ty {
+				kind,
 				span: Span::between(start, end),
 			}
-		} else {
-			lhs
-		};
+		}
 
-		Ok(ty)
+		Ok(lhs)
 	}
 
 	fn parse_identifier(&mut self) -> R<Identifier> {
