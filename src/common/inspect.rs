@@ -220,18 +220,31 @@ fn inspect_expr(expr: &Expr, prefix: String, is_last: bool) -> String {
 
 fn inspect_ty(ty: &Ty) -> String {
 	match &ty.kind {
-		TyKind::Basic(b) => b.clone(),
+		TyKind::Single(t) => t.clone(),
 		TyKind::Tuple(tys) => {
 			format!(
 				"({})",
-				tys.iter().map(|ty| inspect_ty(ty)).collect::<Vec<_>>().join(", "))
-		},
-		TyKind::Function(t1, t2) => {
-			format!(
-				"{} -> {}",
-				inspect_ty(t1),
-				inspect_ty(t2)
+				tys.iter()
+					.map(|ty| inspect_ty(ty))
+					.collect::<Vec<_>>()
+					.join(", "),
 			)
+		},
+		TyKind::Function(params, body) => {
+			let inspect_params = if params.len() == 1 {
+				inspect_ty(&params[0])
+			} else {
+				format!(
+					"({})",
+					params
+						.iter()
+						.map(|ty| inspect_ty(ty))
+						.collect::<Vec<_>>()
+						.join(", "),
+				)
+			};
+
+			format!("{} -> {}", inspect_params, inspect_ty(body))
 		},
 	}
 }

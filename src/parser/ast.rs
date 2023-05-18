@@ -52,9 +52,9 @@ pub struct Ty {
 
 #[derive(Debug)]
 pub enum TyKind {
-	Basic(String),
+	Single(String),
 	Tuple(Vec<Ty>),
-	Function(Box<Ty>, Box<Ty>),
+	Function(Vec<Ty>, Box<Ty>),
 }
 
 #[derive(Debug)]
