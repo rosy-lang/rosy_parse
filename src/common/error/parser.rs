@@ -70,6 +70,25 @@ pub fn invalid_infix_expr(kind: &TokenKind, span: Span) -> RosyError {
 	}
 }
 
+pub fn invalid_type(kind: &TokenKind, span: Span) -> RosyError {
+	let title = String::from("invalid type");
+
+	let name = kind.name();
+	let msg = format!("found: {}", name);
+	let labels = vec![(msg, span.into())];
+
+	let description = format!(
+		"types must start with identifier or {}",
+		TokenKind::LParen.name(),
+	);
+
+	RosyError {
+		title,
+		description,
+		labels,
+	}
+}
+
 pub fn unexpected_token(actual: &TokenKind, expected: &TokenKind, span: Span) -> RosyError {
 	let title = String::from("unexpected token");
 

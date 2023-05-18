@@ -409,8 +409,7 @@ impl Parser {
 					span: Span::between(start, end),
 				}
 			},
-			// TODO: error properly
-			_ => panic!("not a valid type declaration"),
+			kind => return Err(invalid_type(kind, start)),
 		};
 
 		if self.kind_is(TokenKind::RArrow) {
